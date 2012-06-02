@@ -43,6 +43,8 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
 		self.connect(startAction, QtCore.SIGNAL("triggered()"), self.setup)
 		self.setContextMenu(menu)
 
+		menu.addSeparator()
+
 		exitAction = menu.addAction("Exit")
 		self.connect(exitAction, QtCore.SIGNAL("triggered()"), self.exit)
 		self.setContextMenu(menu)
