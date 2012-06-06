@@ -14,7 +14,7 @@ class SetupUI(QtGui.QDialog):
         self.parent = parent
 
         self.connect(self.ui.buttonBox, QtCore.SIGNAL("accepted()"), self.setTimerValues)
-    
+
     def setValues(self, time, msg):
         time = str(datetime.timedelta(seconds=time/1000)).split(':')
         hours = int(time[0])
@@ -44,15 +44,14 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         self.parent = parent
         menu = QtGui.QMenu(parent)
 
-        
         startAction = menu.addAction("Start")
         self.connect(startAction, QtCore.SIGNAL("triggered()"), self.startTimer)
         self.setContextMenu(menu)
-        
+
         startAction = menu.addAction("Stop")
         self.connect(startAction, QtCore.SIGNAL("triggered()"), self.stopTimer)
         self.setContextMenu(menu)
-        
+
         startAction = menu.addAction("Setup")
         self.connect(startAction, QtCore.SIGNAL("triggered()"), self.setup)
         self.setContextMenu(menu)
@@ -98,8 +97,10 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
                 self.useConfig = False
                 pass
         else:
-            self.timeout = self.config.getint("main", "seconds")
-            self.msg = self.config.get("main", "msg")
+            try:
+                self.setValues(self.config.getint("main", "seconds"), self.config.get("main", "msg"))
+            except ConfigParser.NoSectionError:
+                self.config.add_section("main")
 
     def exit(self):
         sys.exit(0)
@@ -109,7 +110,7 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
                     "Error",
                     (msg),
                     QtGui.QMessageBox.Ok)
-    
+
     def startTimer(self):
         if self.timeout < 1:
             QtGui.QMessageBox.information(None,
@@ -125,7 +126,7 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         if self.timer is not None:
             self.timer.stop()
             self.setIcon(self.offIcon)
-    
+
     def endTimer(self):
         confirm = QtGui.QMessageBox.information(None,
                     "Time's up!",
@@ -135,11 +136,11 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
             self.startTimer()
         else:
             self.stopTimer()
-    
+
     def setup(self):
         if self.setupDialog is None:
             self.setupDialog = SetupUI(self)
-        
+
         self.setupDialog.setValues(self.timeout, self.msg)
         self.setupDialog.show()
         self.setupDialog.raise_()
@@ -147,10 +148,11 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
     def setValues(self, seconds, msg):
         self.timeout = seconds * 1000
         self.msg = msg
+        self.setToolTip(msg)
 
         if self.useConfig:
-            self.config.set("main", "seconds", self.timeout)
-            self.config.set("main", "msg", self.msg)
+            self.config.set("main", "seconds", seconds)
+            self.config.set("main", "msg", msg)
 
             with open(self.configFile, 'wb') as config_fh:
                 self.config.write(config_fh)
